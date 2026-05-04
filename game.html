@@ -20,7 +20,8 @@
 
         .cards-wrap { display: flex; justify-content: center; gap: 15px; margin: 40px 0; perspective: 1000px; }
         
-        .card { width: 120px; height: 180px; background: transparent; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
+        /* 텍스트가 들어가도록 카드 세로 길이를 살짝 늘렸습니다 */
+        .card { width: 135px; height: 210px; background: transparent; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
         .card.flipped { transform: rotateY(180deg); }
         
         .card .front, .card .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 15px rgba(0,0,0,0.5); }
@@ -30,10 +31,11 @@
         .card .back::after { content: '?'; font-size: 4em; color: rgba(255,255,255,0.2); font-weight: bold; }
         
         /* 카드 앞면 */
-        .card .front { background: #fff; color: #2c3e50; transform: rotateY(180deg); border: 4px solid #f1c40f; }
-        .card-num { font-size: 3em; font-weight: 900; color: #c0392b; margin-bottom: 5px; line-height: 1; }
-        .card-icon { font-size: 3em; margin-bottom: 10px; }
-        .card-name { font-size: 1.2em; font-weight: bold; }
+        .card .front { background: #fff; color: #2c3e50; transform: rotateY(180deg); border: 4px solid #f1c40f; padding: 5px; box-sizing: border-box; }
+        .card-num { font-size: 2.5em; font-weight: 900; color: #c0392b; margin-bottom: 0px; line-height: 1; }
+        .card-icon { font-size: 2.5em; margin-bottom: 5px; }
+        .card-name { font-size: 1.3em; font-weight: bold; margin-bottom: 8px; }
+        .card-desc { font-size: 0.8em; color: #7f8c8d; word-break: keep-all; line-height: 1.3; font-weight: 600; }
 
         #info-board { background: #2c3e50; padding: 20px; border-radius: 12px; margin-top: 20px; display: none; border: 2px solid #34495e; opacity: 0; transition: opacity 0.5s; }
         #info-board.show { display: block; opacity: 1; }
@@ -42,7 +44,7 @@
         .jokbo-name { font-size: 2em; color: #e74c3c; font-weight: 900; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; animation: pop 0.5s ease-out; }
         .desc-text { font-size: 1.1em; color: #f1c40f; line-height: 1.5; word-break: keep-all; }
 
-        /* 족보 보기 버튼 및 팝업(모달) 스타일 */
+        /* 족보 보기 팝업 */
         #btn-guide { position: fixed; top: 15px; right: 15px; background: #34495e; color: #f1c40f; border: 2px solid #f1c40f; padding: 8px 12px; border-radius: 8px; font-size: 1em; font-weight: bold; z-index: 50; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         #btn-guide:active { transform: translateY(2px); }
 
@@ -62,10 +64,8 @@
 </head>
 <body>
 
-    <!-- 가이드(족보) 보기 버튼 -->
     <button id="btn-guide" onclick="openModal()">📜 족보 보기</button>
 
-    <!-- 가이드 모달 팝업창 -->
     <div id="guide-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -85,25 +85,23 @@
                 <li>[10] 대표이사 - 👑 <i>(최고 점수)</i></li>
                 <li>[9] 본부장 - 👔</li>
                 <li>[8] 팀장 - 💼</li>
-                <li>[7] 차장 - 💻 <i>(실무 에이스)</i></li>
-                <li>[6] 과장 - ☕ <i>(프로젝트 소방수)</i></li>
-                <li>[5] 대리 - ⌨️ <i>(타자 기계)</i></li>
+                <li>[7] 차장 - 💻</li>
+                <li>[6] 과장 - ☕</li>
+                <li>[5] 대리 - ⌨️</li>
                 <li>[4] 사원 - 📄</li>
-                <li>[3] 신입 - 🐣 <i>(시한폭탄)</i></li>
+                <li>[3] 신입 - 🐣</li>
                 <li>[2] 낙하산 - 🪂</li>
                 <li>[1] 퇴사예정자 - 🕊️</li>
             </ul>
         </div>
     </div>
 
-    <!-- 1. 시작 화면 -->
     <div id="start-screen">
         <h1 style="margin-top: 40px;">사내 정치 섯다</h1>
         <p class="instruction">주변을 살피고 폰을 가리세요.<br>준비가 되면 패를 뽑습니다.</p>
         <button class="main-btn" onclick="drawCards()">나의 패 뽑기</button>
     </div>
 
-    <!-- 2. 게임 화면 (패 까기) -->
     <div id="game-screen">
         <h2 style="color: #bdc3c7; margin-top: 40px;">카드를 터치하여 확인하세요</h2>
         <div class="cards-wrap">
@@ -127,21 +125,25 @@
     </div>
 
     <script>
-        // 모달(팝업창) 열기/닫기 로직
         const modal = document.getElementById("guide-modal");
         function openModal() { modal.style.display = "block"; }
         function closeModal() { modal.style.display = "none"; }
-        // 팝업 바깥 어두운 배경 누르면 닫히게 설정
         window.onclick = function(event) {
             if (event.target == modal) { modal.style.display = "none"; }
         }
 
+        // 직급별 뼈 때리는 설명 추가
         const cardDefs = [
-            { id: 10, name: '대표이사', icon: '👑' }, { id: 9, name: '본부장', icon: '👔' },
-            { id: 8, name: '팀장', icon: '💼' }, { id: 7, name: '차장', icon: '💻' },
-            { id: 6, name: '과장', icon: '☕' }, { id: 5, name: '대리', icon: '⌨️' },
-            { id: 4, name: '사원', icon: '📄' }, { id: 3, name: '신입', icon: '🐣' },
-            { id: 2, name: '낙하산', icon: '🪂' }, { id: 1, name: '퇴사예정자', icon: '🕊️' }
+            { id: 10, name: '대표이사', icon: '👑', desc: '이거 무조건 성공시켜.' },
+            { id: 9, name: '본부장', icon: '👔', desc: '요즘 트렌드가 이거라며?' },
+            { id: 8, name: '팀장', icon: '💼', desc: '오픈 일정 맞출 수 있지?' },
+            { id: 7, name: '차장', icon: '💻', desc: '코어 로직의 지배자' },
+            { id: 6, name: '과장', icon: '☕', desc: '끝없는 오류를 쳐내는 소방수' },
+            { id: 5, name: '대리', icon: '⌨️', desc: '끝없는 코딩, 맑은 눈의 광인' },
+            { id: 4, name: '사원', icon: '📄', desc: '묵묵히 잡무를 쳐내는 1인분' },
+            { id: 3, name: '신입', icon: '🐣', desc: '해맑게 터트리는 대형 사고' },
+            { id: 2, name: '낙하산', icon: '🪂', desc: '건드리면 피곤해지는 언터처블' },
+            { id: 1, name: '퇴사예정자', icon: '🕊️', desc: '인수인계 던지고 마음은 떠남' }
         ];
 
         let myHand = [];
@@ -159,11 +161,13 @@
             
             myHand = [deck.pop(), deck.pop()];
 
+            // 카드 앞면에 설명(desc) 데이터 바인딩
             for(let i=0; i<2; i++) {
                 document.getElementById(`front-${i}`).innerHTML = `
                     <div class="card-icon">${myHand[i].icon}</div>
                     <div class="card-num">${myHand[i].id}</div>
                     <div class="card-name">${myHand[i].name}</div>
+                    <div class="card-desc">"${myHand[i].desc}"</div>
                 `;
             }
         }
