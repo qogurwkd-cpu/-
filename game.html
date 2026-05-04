@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사내 정치 섯다 - 내 패 보기</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; background-color: #121a21; color: #ecf0f1; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        h1 { color: #f1c40f; margin-bottom: 5px; font-size: 2em; }
+        
+        #start-screen, #game-screen, #result-screen { width: 100%; max-width: 400px; display: none; }
+        #start-screen { display: block; }
+        
+        .main-btn { padding: 20px; font-size: 1.5em; cursor: pointer; border-radius: 12px; border: none; font-weight: bold; background-color: #e67e22; color: white; width: 100%; box-shadow: 0 6px 0 #d35400; transition: 0.1s; margin-top: 30px; }
+        .main-btn:active { transform: translateY(6px); box-shadow: none; }
+        .reset-btn { background-color: #7f8c8d; box-shadow: 0 6px 0 #636e72; margin-top: 15px; }
+        .reset-btn:active { background-color: #636e72; box-shadow: none; }
+
+        .instruction { color: #bdc3c7; font-size: 1.2em; margin-bottom: 30px; word-break: keep-all; }
+
+        .cards-wrap { display: flex; justify-content: center; gap: 15px; margin: 40px 0; perspective: 1000px; }
+        
+        .card { width: 120px; height: 180px; background: transparent; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
+        .card.flipped { transform: rotateY(180deg); }
+        
+        .card .front, .card .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 15px rgba(0,0,0,0.5); }
+        
+        /* 카드 뒷면 (숨김 상태) */
+        .card .back { background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 15px, #34495e 15px, #34495e 30px); border: 3px solid #7f8c8d; }
+        .card .back::after { content: '?'; font-size: 4em; color: rgba(255,255,255,0.2); font-weight: bold; }
+        
+        /* 카드 앞면 (공개 상태) */
+        .card .front { background: #fff; color: #2c3e50; transform: rotateY(180deg); border: 4px solid #f1c40f; }
+        .card-num { font-size: 3em; font-weight: 900; color: #c0392b; margin-bottom: 5px; line-height: 1; }
+        .card-icon { font-size: 3em; margin-bottom: 10px; }
+        .card-name { font-size: 1.2em; font-weight: bold; }
+
+        #info-board { background: #2c3e50; padding: 20px; border-radius: 12px; margin-top: 20px; display: none; border: 2px solid #34495e; opacity: 0; transition: opacity 0.5s; }
+        #info-board.show { display: block; opacity: 1; }
+
+        .score-text { font-size: 1.5em; font-weight: bold; margin-bottom: 10px; color: #fff; }
+        .jokbo-name { font-size: 2em; color: #e74c3c; font-weight: 900; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; animation: pop 0.5s ease-out; }
+        .desc-text { font-size: 1.1em; color: #f1c40f; line-height: 1.5; word-break: keep-all; }
+
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 시작 화면 -->
+    <div id="start-screen">
+        <h1>사내 정치 섯다</h1>
+        <p class="instruction">주변을 살피고 폰을 가리세요.<br>준비가 되면 패를 뽑습니다.</p>
+        <button class="main-btn" onclick="drawCards()">나의 패 뽑기</button>
+    </div>
+
+    <!-- 2. 게임 화면 (패 까기) -->
+    <div id="game-screen">
+        <h2 style="color: #bdc3c7;">카드를 터치하여 확인하세요</h2>
+        <div class="cards-wrap">
+            <div class="card" id="card-0" onclick="flipCard(0)">
+                <div class="back"></div>
+                <div class="front" id="front-0"></div>
+            </div>
+            <div class="card" id="card-1" onclick="flipCard(1)">
+                <div class="back"></div>
+                <div class="front" id="front-1"></div>
+            </div>
+        </div>
+        
+        <div id="info-board">
+            <div class="score-text" id="score-text"></div>
+            <div class="jokbo-name" id="jokbo-name"></div>
+            <div class="desc-text" id="desc-text"></div>
+        </div>
+
+        <button class="main-btn reset-btn" id="btn-restart" style="display:none;" onclick="location.reload()">다음 판 다시 뽑기</button>
+    </div>
+
+    <script>
+        const cardDefs = [
+            { id: 10, name: '대표이사', icon: '👑' }, { id: 9, name: '본부장', icon: '👔' },
+            { id: 8, name: '팀장', icon: '💼' }, { id: 7, name: '차장', icon: '💻' },
+            { id: 6, name: '과장', icon: '☕' }, { id: 5, name: '대리', icon: '⌨️' },
+            { id: 4, name: '사원', icon: '📄' }, { id: 3, name: '신입', icon: '🐣' },
+            { id: 2, name: '낙하산', icon: '🪂' }, { id: 1, name: '퇴사예정자', icon: '🕊️' }
+        ];
+
+        let myHand = [];
+        let flippedCount = 0;
+
+        function drawCards() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+
+            // 개인 폰에서 20장 덱을 만들어 2장을 뽑음 (같은 카드가 1장씩은 중복될 수 있음)
+            let deck = [];
+            for (let i = 0; i < 2; i++) {
+                cardDefs.forEach(c => deck.push({...c}));
+            }
+            deck.sort(() => Math.random() - 0.5); 
+            
+            myHand = [deck.pop(), deck.pop()];
+
+            // 카드 앞면 세팅
+            for(let i=0; i<2; i++) {
+                document.getElementById(`front-${i}`).innerHTML = `
+                    <div class="card-icon">${myHand[i].icon}</div>
+                    <div class="card-num">${myHand[i].id}</div>
+                    <div class="card-name">${myHand[i].name}</div>
+                `;
+            }
+        }
+
+        function flipCard(idx) {
+            const cardEl = document.getElementById(`card-${idx}`);
+            if (!cardEl.classList.contains('flipped')) {
+                cardEl.classList.add('flipped');
+                flippedCount++;
+
+                if (flippedCount === 2) {
+                    setTimeout(showResult, 600); // 카드가 다 뒤집힌 후 약간의 뜸을 들이고 결과 공개
+                }
+            }
+        }
+
+        function showResult() {
+            const infoBoard = document.getElementById('info-board');
+            const scoreText = document.getElementById('score-text');
+            const jokboName = document.getElementById('jokbo-name');
+            const descText = document.getElementById('desc-text');
+            const btnRestart = document.getElementById('btn-restart');
+
+            let c1 = myHand[0].id;
+            let c2 = myHand[1].id;
+            let sum = c1 + c2;
+            let sorted = [c1, c2].sort((a,b) => a-b);
+
+            let jokbo = "";
+            let desc = "";
+
+            // 족보 판정 (이전 룰 적용)
+            if (sorted[0] === 1 && sorted[1] === 10) {
+                jokbo = "👑 [독대]";
+                desc = "잃을 게 없는 자와 모든 걸 가진 자의 만남!<br><b>무조건 단독 우승!</b> 다른 사람들에게 1잔씩 먹이세요.";
+            } else if (sorted[0] === 6 && sorted[1] === 7) {
+                jokbo = "🔥 [영혼의 듀오]";
+                desc = "에이스 두 명의 하드캐리!<br>합산 13점이지만, <b>14점 이상을 모두 이깁니다.</b> (독대 제외)";
+            } else if (sorted[0] === 8 && sorted[1] === 9) {
+                jokbo = "💼 [탁상공론]";
+                desc = "지시할 사람만 있고 실무자가 없습니다.<br>합산은 높지만 프로젝트가 엎어졌습니다. <b>무조건 꼴찌(벌칙 확정)</b>입니다.";
+            } else if (sorted[0] === 2 && sorted[1] === 3) {
+                jokbo = "🚨 [운영DB 드랍]";
+                desc = "대형 사고가 터졌습니다!<br>승패 무효! <b>게임 참여자 전원이 다 같이 한 잔 마십니다.</b>";
+            } else if (sorted[0] === 1 && sorted[1] === 4) {
+                jokbo = "🦠 [퇴사 바이러스]";
+                desc = "팀 분위기가 박살 났습니다.<br><b>1등을 한 사람과 내 점수를 강제로 교환</b>하여 1등을 나락으로 보냅니다!";
+            } else {
+                desc = "특수 능력이 발동하지 않았습니다.<br>숫자의 합산 결과로 승부를 겨루세요!";
+            }
+
+            scoreText.innerHTML = `내 패의 기본 합산: <span style="color:#e74c3c; font-size:1.2em;">${sum}</span> 점`;
+            
+            if (jokbo) {
+                jokboName.innerText = jokbo;
+                jokboName.style.display = 'block';
+            } else {
+                jokboName.style.display = 'none';
+            }
+            
+            descText.innerHTML = desc;
+
+            infoBoard.classList.add('show');
+            btnRestart.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
