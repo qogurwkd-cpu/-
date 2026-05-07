@@ -94,7 +94,16 @@
             else { rankLabel.innerText = "LEGENDARY"; rankLabel.style.color = "#f1c40f"; displayBox.style.borderColor = "#f1c40f"; displayBox.style.boxShadow = "0 0 20px rgba(241, 196, 15, 0.4)"; }
         }
 
-        function getSuccessProb(lvl) { if (lvl < 5) return 100; if (lvl < 10) return 70; if (lvl < 15) return 40; if (lvl < 20) return 15; return 5; }
+        function getSuccessProb(lvl) { 
+    if (lvl < 3) return 100;   // 0~2강: 100% (완전 기초)
+    else if (lvl < 5) return 90;    // 3~4강: 90%
+    else if (lvl < 7) return 70;    // 5~6강: 70%
+    else if (lvl < 10) return 50;   // 7~9강: 50%
+    else if (lvl < 13) return 30;   // 10~12강: 30%
+    else if (lvl < 16) return 20;   // 13~15강: 20%
+    else if (lvl < 20) return 10;   // 16~19강: 10%
+    else return 3;                  // 20강 이상: 3% (극악의 확률)
+}
         function getBreakProb(lvl) { if (lvl < 7) return 0; if (lvl < 12) return 5; if (lvl < 17) return 15; return 30; }
 
         function addLog(boxId, msg, type) {
