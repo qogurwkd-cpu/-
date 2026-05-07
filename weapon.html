@@ -9,16 +9,13 @@
         h1 { color: #58a6ff; margin-bottom: 20px; font-size: 1.8em; text-shadow: 0 0 10px rgba(88, 166, 255, 0.3); }
         
         .game-layout { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; }
-        
         .section { background: #161b22; padding: 25px; border-radius: 20px; border: 1px solid #30363d; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        /* 왼쪽: 강화 섹션 */
         .weapon-display { margin: 15px 0; padding: 20px; background: #0d1117; border-radius: 15px; border: 2px solid #f1c40f; transition: 0.3s; }
         #weapon-rank { font-size: 1.1em; color: #8b949e; font-weight: bold; }
         #weapon-name { font-size: 1.8em; font-weight: 900; color: #ffffff; margin: 10px 0; min-height: 60px; display: flex; align-items: center; justify-content: center; word-break: keep-all; }
         #weapon-level { font-size: 1.5em; color: #f1c40f; }
 
-        /* 오른쪽: 수급 섹션 */
         .farm-btn { padding: 15px; font-size: 1em; cursor: pointer; border-radius: 12px; border: none; font-weight: bold; color: white; width: 100%; margin-bottom: 12px; transition: 0.1s; position: relative; overflow: hidden; }
         .btn-scrum { background-color: #1f6feb; box-shadow: 0 4px 0 #114ba3; }
         .btn-jira { background-color: #8957e5; box-shadow: 0 4px 0 #6e3fc7; }
@@ -26,10 +23,8 @@
         
         .farm-btn:active { transform: translateY(4px); box-shadow: none; }
         .farm-btn:disabled { background-color: #484f58; box-shadow: none; opacity: 0.6; cursor: not-allowed; }
-
         .progress-bar { position: absolute; bottom: 0; left: 0; height: 5px; background: rgba(255,255,255,0.5); width: 0%; }
 
-        /* 공통 스타일 */
         .status-header { background: #0d1117; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #30363d; display: flex; justify-content: space-around; font-size: 0.9em; }
         .gold-val { color: #f1c40f; font-weight: bold; }
         
@@ -38,9 +33,10 @@
 
         .log-box { margin-top: 15px; height: 120px; overflow-y: auto; background: #0d1117; border-radius: 10px; padding: 10px; font-size: 0.85em; text-align: left; border: 1px solid #30363d; border-top: 3px solid #30363d; }
         .log-entry { margin-bottom: 5px; border-bottom: 1px solid #161b22; padding-bottom: 2px; }
-        .success { color: #3fb950; } .fail { color: #f85149; } .broken { color: #da3633; font-weight: bold; text-decoration: underline; } .gold-gain { color: #f1c40f; }
+        .success { color: #3fb950; } .fail { color: #f85149; } .broken { color: #da3633; font-weight: bold; } .gold-gain { color: #f1c40f; }
 
         #prob-display { font-size: 0.8em; color: #8b949e; margin-top: 10px; }
+        .reset-data { margin-top: 20px; font-size: 0.7em; color: #484f58; cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -53,40 +49,23 @@
                 <span>골드: <span class="gold-val" id="gold">10,000</span>G</span>
                 <span>강화: <span id="count">0</span>회</span>
             </div>
-
             <div class="weapon-display" id="display-box">
                 <div id="weapon-rank">COMMON</div>
                 <div id="weapon-name">사원증 목걸이</div>
                 <div id="weapon-level">+0</div>
             </div>
-
             <button class="main-btn" onclick="enhance()">강화하기 (500G)</button>
             <div id="prob-display">성공 100% | 파괴 0%</div>
-
-            <div class="log-box" id="log-weapon">
-                <div class="log-entry">장비 강화 로그가 표시됩니다.</div>
-            </div>
+            <div class="log-box" id="log-weapon"><div class="log-entry">장비 강화 로그가 표시됩니다.</div></div>
         </div>
 
         <div class="section">
             <h2 style="font-size: 1.2em; margin-top: 0; color: #8b949e;">한금아 골드 수급처</h2>
-            
-            <button class="farm-btn btn-scrum" onclick="scrum()">
-                딸깍! 데일리 스크럼 (+50G)
-            </button>
-
-            <button class="farm-btn btn-jira" id="jira-btn" onclick="jiraTicket()">
-                Jira 티켓 처리 (+2,000G)
-                <div class="progress-bar" id="jira-progress"></div>
-            </button>
-
-            <button class="farm-btn btn-overtime" onclick="overtime()">
-                야근 수당 신청 (운빨 로또)
-            </button>
-
-            <div class="log-box" id="log-gold">
-                <div class="log-entry">자금 수급 로그가 표시됩니다.</div>
-            </div>
+            <button class="farm-btn btn-scrum" onclick="scrum()">딸깍! 데일리 스크럼 (+50G)</button>
+            <button class="farm-btn btn-jira" id="jira-btn" onclick="jiraTicket()">Jira 티켓 처리 (+2,000G)<div class="progress-bar" id="jira-progress"></div></button>
+            <button class="farm-btn btn-overtime" onclick="overtime()">야근 수당 신청 (운빨 로또)</button>
+            <div class="log-box" id="log-gold"><div class="log-entry">자금 수급 로그가 표시됩니다.</div></div>
+            <div class="reset-data" onclick="resetGame()">[데이터 초기화] 처음부터 다시 시작하기</div>
         </div>
     </div>
 
@@ -96,69 +75,53 @@
         let count = 0;
         let isProcessingJira = false;
 
-        // 무기 명칭 업데이트 (요청하신 명칭 반영)
-        const weaponNames = [
-            "사원증 목걸이", 
-            "낡은 키보드", 
-            "무소음 마우스", 
-            "듀얼 모니터", 
-            "기계식 키보드", 
-            "커스텀 수냉 PC", 
-            "우리꺼 서버", 
-            "한금아 지배자"
-        ];
-        
+        const weaponNames = ["사원증 목걸이", "낡은 키보드", "무소음 마우스", "듀얼 모니터", "기계식 키보드", "커스텀 수냉 PC", "우리꺼 서버", "한금아 지배자"];
+
+        // 저장 로직
+        function saveGame() {
+            const gameData = { level, gold, count };
+            localStorage.setItem('kfits_weapon_save', JSON.stringify(gameData));
+        }
+
+        // 불러오기 로직
+        function loadGame() {
+            const savedData = localStorage.getItem('kfits_weapon_save');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                level = data.level || 0;
+                gold = data.gold || 0;
+                count = data.count || 0;
+                updateDisplay();
+                addLog('log-weapon', "데이터를 성공적으로 불러왔습니다.", "success");
+            }
+        }
+
+        function resetGame() {
+            if(confirm("정말로 모든 데이터를 초기화하고 신입 사원으로 돌아가시겠습니까?")) {
+                localStorage.removeItem('kfits_weapon_save');
+                location.reload();
+            }
+        }
+
         function updateDisplay() {
             document.getElementById('weapon-level').innerText = `+${level}`;
             document.getElementById('gold').innerText = gold.toLocaleString();
             document.getElementById('count').innerText = count;
-            
-            // 레벨에 따른 이름 결정
             let nameIdx = Math.min(Math.floor(level / 3), weaponNames.length - 1);
             document.getElementById('weapon-name').innerText = weaponNames[nameIdx];
-
             let prob = getSuccessProb(level);
             let breakProb = getBreakProb(level);
             document.getElementById('prob-display').innerText = `성공 ${prob}% | 파괴 ${breakProb}%`;
-
-            // 등급 표시 업데이트
             const rankLabel = document.getElementById('weapon-rank');
             const displayBox = document.getElementById('display-box');
-            
-            if(level < 10) {
-                rankLabel.innerText = "COMMON";
-                rankLabel.style.color = "#8b949e";
-                displayBox.style.borderColor = "#f1c40f";
-            } else if(level < 15) {
-                rankLabel.innerText = "RARE";
-                rankLabel.style.color = "#58a6ff";
-                displayBox.style.borderColor = "#58a6ff";
-            } else if(level < 20) {
-                rankLabel.innerText = "EPIC";
-                rankLabel.style.color = "#8957e5";
-                displayBox.style.borderColor = "#8957e5";
-            } else {
-                rankLabel.innerText = "LEGENDARY";
-                rankLabel.style.color = "#f1c40f";
-                displayBox.style.borderColor = "#f1c40f";
-                displayBox.style.boxShadow = "0 0 20px rgba(241, 196, 15, 0.4)";
-            }
+            if(level < 10) { rankLabel.innerText = "COMMON"; rankLabel.style.color = "#8b949e"; displayBox.style.borderColor = "#f1c40f"; }
+            else if(level < 15) { rankLabel.innerText = "RARE"; rankLabel.style.color = "#58a6ff"; displayBox.style.borderColor = "#58a6ff"; }
+            else if(level < 20) { rankLabel.innerText = "EPIC"; rankLabel.style.color = "#8957e5"; displayBox.style.borderColor = "#8957e5"; }
+            else { rankLabel.innerText = "LEGENDARY"; rankLabel.style.color = "#f1c40f"; displayBox.style.borderColor = "#f1c40f"; displayBox.style.boxShadow = "0 0 20px rgba(241, 196, 15, 0.4)"; }
         }
 
-        function getSuccessProb(lvl) {
-            if (lvl < 5) return 100;
-            if (lvl < 10) return 70;
-            if (lvl < 15) return 40;
-            if (lvl < 20) return 15;
-            return 5;
-        }
-
-        function getBreakProb(lvl) {
-            if (lvl < 7) return 0;
-            if (lvl < 12) return 5;
-            if (lvl < 17) return 15;
-            return 30;
-        }
+        function getSuccessProb(lvl) { if (lvl < 5) return 100; if (lvl < 10) return 70; if (lvl < 15) return 40; if (lvl < 20) return 15; return 5; }
+        function getBreakProb(lvl) { if (lvl < 7) return 0; if (lvl < 12) return 5; if (lvl < 17) return 15; return 30; }
 
         function addLog(boxId, msg, type) {
             const logBox = document.getElementById(boxId);
@@ -169,36 +132,20 @@
             if (logBox.children.length > 10) logBox.lastChild.remove();
         }
 
-        // --- 강화 로직 ---
         function enhance() {
-            if (gold < 500) {
-                addLog('log-weapon', "잔액이 부족합니다. 스크럼이라도 짜세요!", "fail");
-                return;
-            }
+            if (gold < 500) { addLog('log-weapon', "잔액 부족! 스크럼 짜세요.", "fail"); return; }
             gold -= 500; count++;
             let roll = Math.random() * 100;
             let sProb = getSuccessProb(level);
             let bProb = getBreakProb(level);
-
-            if (roll < sProb) {
-                level++;
-                addLog('log-weapon', `[성공] +${level} 강화 성공!`, "success");
-            } else if (roll > (100 - bProb)) {
-                addLog('log-weapon', `[파괴] 무기가 증발했습니다! (+${level} 증발)`, "broken");
-                level = 0;
-            } else {
-                addLog('log-weapon', `[실패] 강화 실패.`, "fail");
-                if (level > 10) level--; // 10강 이후 실패 시 하락
-            }
+            if (roll < sProb) { level++; addLog('log-weapon', `[성공] +${level} 강화 성공!`, "success"); }
+            else if (roll > (100 - bProb)) { addLog('log-weapon', `[파괴] 무기 증발!`, "broken"); level = 0; }
+            else { addLog('log-weapon', `[실패] 강화 실패.`, "fail"); if (level > 10) level--; }
+            saveGame();
             updateDisplay();
         }
 
-        // --- 골드 수급 로직 ---
-        function scrum() {
-            gold += 50;
-            addLog('log-gold', "스크럼 참여 중... 딸깍! (+50G)", "gold-gain");
-            updateDisplay();
-        }
+        function scrum() { gold += 50; addLog('log-gold', "스크럼 딸깍! (+50G)", "gold-gain"); saveGame(); updateDisplay(); }
 
         function jiraTicket() {
             if (isProcessingJira) return;
@@ -206,37 +153,26 @@
             const btn = document.getElementById('jira-btn');
             const progress = document.getElementById('jira-progress');
             btn.disabled = true;
-            
             let width = 0;
             let interval = setInterval(() => {
                 if (width >= 100) {
                     clearInterval(interval);
                     gold += 2000;
-                    addLog('log-gold', "티켓 해결 완료! 인센티브 입금. (+2,000G)", "gold-gain");
-                    btn.disabled = false;
-                    isProcessingJira = false;
-                    progress.style.width = '0%';
-                    updateDisplay();
-                } else {
-                    width += 1;
-                    progress.style.width = width + '%';
-                }
-            }, 50); // 약 5초
+                    addLog('log-gold', "티켓 해결! (+2,000G)", "gold-gain");
+                    btn.disabled = false; isProcessingJira = false; progress.style.width = '0%';
+                    saveGame(); updateDisplay();
+                } else { width += 1; progress.style.width = width + '%'; }
+            }, 50);
         }
 
         function overtime() {
-            if (Math.random() > 0.5) {
-                gold += 5000;
-                addLog('log-gold', "야근 수당 승인! 금융 치료 성공. (+5,000G)", "gold-gain");
-            } else {
-                let loss = Math.min(gold, 3000);
-                gold -= loss;
-                addLog('log-gold', "본부장님 등장! 사유서 작성 중... (-" + loss + "G)", "fail");
-            }
-            updateDisplay();
+            if (Math.random() > 0.5) { gold += 5000; addLog('log-gold', "야근 수당 성공! (+5,000G)", "gold-gain"); }
+            else { let loss = Math.min(gold, 3000); gold -= loss; addLog('log-gold', "야근 불허! 벌금 납부... (-" + loss + "G)", "fail"); }
+            saveGame(); updateDisplay();
         }
 
-        updateDisplay();
+        // 시작 시 데이터 로드
+        window.onload = loadGame;
     </script>
 </body>
 </html>
