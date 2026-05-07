@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>한금아 무기강화시뮬레이터 v2.0</title>
+    <title>한금아 무기강화시뮬레이터 v2.5</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; text-align: center; background-color: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
         h1 { color: #58a6ff; margin-bottom: 20px; font-size: 1.8em; text-shadow: 0 0 10px rgba(88, 166, 255, 0.3); }
@@ -23,19 +23,21 @@
         .status-header { background: #0d1117; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #30363d; display: flex; justify-content: space-around; font-size: 0.9em; }
         .gold-val { color: #f1c40f; font-weight: bold; }
         .main-btn { padding: 15px; font-size: 1.1em; cursor: pointer; border-radius: 12px; border: none; font-weight: bold; background-color: #238636; color: white; width: 100%; box-shadow: 0 4px 0 #1a6328; margin-bottom: 8px; }
+        .main-btn:disabled { background-color: #484f58; box-shadow: none; cursor: not-allowed; }
         .multi-btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
         .sub-btn { flex: 1; padding: 10px; font-size: 0.9em; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background-color: #30363d; color: white; transition: 0.1s; }
-        .sub-btn:hover { background-color: #484f58; }
+        .sub-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .log-box { margin-top: 15px; height: 150px; overflow-y: auto; background: #0d1117; border-radius: 10px; padding: 10px; font-size: 0.85em; text-align: left; border: 1px solid #30363d; }
         .log-entry { margin-bottom: 5px; border-bottom: 1px solid #161b22; padding-bottom: 2px; }
-        .success { color: #3fb950; } .fail { color: #f85149; } .broken { color: #da3633; font-weight: bold; } .gold-gain { color: #f1c40f; }
+        .success { color: #3fb950; } .fail { color: #f85149; } .broken { color: #da3633; font-weight: bold; } .gold-gain { color: #f1c40f; } .goat { color: #f1c40f; font-weight: 900; animation: blink 1s infinite; }
         #prob-display { font-size: 0.8em; color: #8b949e; margin-top: 5px; }
         .reset-data { margin-top: 20px; font-size: 0.7em; color: #484f58; cursor: pointer; text-decoration: underline; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <h1>한금아 무기강화시뮬레이터 v2.0</h1>
+    <h1>한금아 무기강화시뮬레이터 v2.5</h1>
 
     <div class="game-layout">
         <div class="section">
@@ -48,10 +50,10 @@
                 <div id="weapon-name">사원증 목걸이</div>
                 <div id="weapon-level">+0</div>
             </div>
-            <button class="main-btn" onclick="enhance(1)">강화하기 (500G)</button>
+            <button class="main-btn" id="btn-enhance-main" onclick="enhance(1)">강화하기 (500G)</button>
             <div class="multi-btn-group">
-                <button class="sub-btn" onclick="enhance(5)">5회 연속</button>
-                <button class="sub-btn" onclick="enhance(10)">10회 연속</button>
+                <button class="sub-btn" id="btn-enhance-5" onclick="enhance(5)">5회 연속</button>
+                <button class="sub-btn" id="btn-enhance-10" onclick="enhance(10)">10회 연속</button>
             </div>
             <div id="prob-display">성공 100% | 파괴 0%</div>
             <div class="log-box" id="log-weapon"><div class="log-entry">로그가 여기에 표시됩니다.</div></div>
@@ -60,7 +62,7 @@
         <div class="section">
             <h2 style="font-size: 1.2em; margin-top: 0; color: #8b949e;">한금아 자금 수급처</h2>
             <button class="farm-btn btn-debug" onclick="scrum()">딸깍! 오류 발견 디버깅 (+50G)</button>
-            <button class="farm-btn btn-compile" id="jira-btn" onclick="jiraTicket()">코드 컴파일 중... (+2,000G)<div class="progress-bar" id="jira-progress"></div></button>
+            <button class="farm-btn btn-compile" id="compile-btn" onclick="jiraTicket()">코드 컴파일 중... (+2,000G)<div class="progress-bar" id="jira-progress"></div></button>
             <button class="farm-btn btn-overtime" onclick="overtime()">야근 수당 신청 (성공시 10,000G!)</button>
             <div class="log-box" id="log-gold"><div class="log-entry">자금 로그가 여기에 표시됩니다.</div></div>
             <div class="reset-data" onclick="resetGame()">[데이터 초기화]</div>
@@ -68,43 +70,87 @@
     </div>
 
     <script>
-        let level = 0; let gold = 10000; let count = 0; let isProcessingJira = false;
-        const weaponNames = ["사원증 목걸이", "낡은 키보드", "무소음 마우스", "듀얼 모니터", "기계식 키보드", "커스텀 수냉 PC", "우리꺼 서버", "한금아 지배자"];
+        let level = 0; let gold = 10000; let count = 0; let isProcessingCompile = false;
+        
+        // 과장님 요청 명칭 반영
+        function getWeaponName(lvl) {
+            if (lvl < 3) return "사원증 목걸이";
+            if (lvl < 5) return "삼디다스 슬리퍼";
+            if (lvl < 7) return "유선 마우스";
+            if (lvl < 10) return "저소음 키보드";
+            if (lvl < 13) return "버티컬 마우스";
+            if (lvl < 16) return "듀얼모니터";
+            if (lvl < 18) return "기계식 키보드";
+            if (lvl < 20) return "모션데스크";
+            if (lvl === 20) return "허먼밀러 의자";
+            return "G.O.A.T";
+        }
 
-        function saveGame() { localStorage.setItem('kfits_weapon_save_v2', JSON.stringify({ level, gold, count })); }
+        // 과장님 요청 세밀 확률 반영
+        function getSuccessProb(lvl) {
+            if (lvl < 3) return 100;
+            else if (lvl < 5) return 90;
+            else if (lvl < 7) return 80;
+            else if (lvl < 10) return 70;
+            else if (lvl < 13) return 60;
+            else if (lvl < 16) return 50;
+            else if (lvl < 18) return 40;
+            else if (lvl < 20) return 30;
+            else if (lvl === 20) return 10;
+            else if (lvl === 21) return 5;
+            return 0; // 21강 초과 시 (이론상 도달불가)
+        }
+
+        function getBreakProb(lvl) {
+            if (lvl < 7) return 0;
+            else if (lvl < 12) return 5;
+            else if (lvl < 17) return 15;
+            else return 30;
+        }
+
+        function saveGame() { localStorage.setItem('kfits_weapon_save_v2_5', JSON.stringify({ level, gold, count })); }
         function loadGame() {
-            const savedData = localStorage.getItem('kfits_weapon_save_v2');
+            const savedData = localStorage.getItem('kfits_weapon_save_v2_5');
             if (savedData) { const data = JSON.parse(savedData); level = data.level || 0; gold = data.gold || 0; count = data.count || 0; updateDisplay(); }
         }
-        function resetGame() { if(confirm("초기화하시겠습니까?")) { localStorage.removeItem('kfits_weapon_save_v2'); location.reload(); } }
+        function resetGame() { if(confirm("초기화하시겠습니까?")) { localStorage.removeItem('kfits_weapon_save_v2_5'); location.reload(); } }
 
         function updateDisplay() {
             document.getElementById('weapon-level').innerText = `+${level}`;
             document.getElementById('gold').innerText = gold.toLocaleString();
             document.getElementById('count').innerText = count;
-            let nameIdx = Math.min(Math.floor(level / 3), weaponNames.length - 1);
-            document.getElementById('weapon-name').innerText = weaponNames[nameIdx];
-            let prob = getSuccessProb(level); let breakProb = getBreakProb(level);
-            document.getElementById('prob-display').innerText = `성공 ${prob}% | 파괴 ${breakProb}%`;
+            document.getElementById('weapon-name').innerText = getWeaponName(level);
+            
+            let prob = getSuccessProb(level); 
+            let breakProb = getBreakProb(level);
+            document.getElementById('prob-display').innerText = (level < 21) ? `성공 ${prob}% | 파괴 ${breakProb}%` : "MAX 강화 달성";
+
             const rankLabel = document.getElementById('weapon-rank');
             const displayBox = document.getElementById('display-box');
-            if(level < 10) { rankLabel.innerText = "COMMON"; rankLabel.style.color = "#8b949e"; displayBox.style.borderColor = "#f1c40f"; }
-            else if(level < 15) { rankLabel.innerText = "RARE"; rankLabel.style.color = "#58a6ff"; displayBox.style.borderColor = "#58a6ff"; }
-            else if(level < 20) { rankLabel.innerText = "EPIC"; rankLabel.style.color = "#8957e5"; displayBox.style.borderColor = "#8957e5"; }
-            else { rankLabel.innerText = "LEGENDARY"; rankLabel.style.color = "#f1c40f"; displayBox.style.borderColor = "#f1c40f"; displayBox.style.boxShadow = "0 0 20px rgba(241, 196, 15, 0.4)"; }
-        }
+            const mainBtn = document.getElementById('btn-enhance-main');
+            const subBtn5 = document.getElementById('btn-enhance-5');
+            const subBtn10 = document.getElementById('btn-enhance-10');
 
-        function getSuccessProb(lvl) { 
-    if (lvl < 3) return 100;   // 0~2강: 100% (완전 기초)
-    else if (lvl < 5) return 90;    // 3~4강: 90%
-    else if (lvl < 7) return 70;    // 5~6강: 70%
-    else if (lvl < 10) return 50;   // 7~9강: 50%
-    else if (lvl < 13) return 30;   // 10~12강: 30%
-    else if (lvl < 16) return 20;   // 13~15강: 20%
-    else if (lvl < 20) return 10;   // 16~19강: 10%
-    else return 3;                  // 20강 이상: 3% (극악의 확률)
-}
-        function getBreakProb(lvl) { if (lvl < 7) return 0; if (lvl < 12) return 5; if (lvl < 17) return 15; return 30; }
+            // 21강(GOAT) 달성 시 강화 버튼 비활성화 및 로직 처리
+            if (level >= 21) {
+                rankLabel.innerText = "G.O.A.T";
+                rankLabel.style.color = "#f1c40f";
+                displayBox.style.borderColor = "#f1c40f";
+                displayBox.style.boxShadow = "0 0 30px rgba(241, 196, 15, 0.8)";
+                mainBtn.disabled = true;
+                subBtn5.disabled = true;
+                subBtn10.disabled = true;
+                mainBtn.innerText = "이미 당신은 한금아의 GOAT입니다.";
+            } else {
+                mainBtn.disabled = false;
+                subBtn5.disabled = false;
+                subBtn10.disabled = false;
+                mainBtn.innerText = "강화하기 (500G)";
+                if(level < 10) { rankLabel.innerText = "COMMON"; rankLabel.style.color = "#8b949e"; displayBox.style.borderColor = "#f1c40f"; }
+                else if(level < 16) { rankLabel.innerText = "RARE"; rankLabel.style.color = "#58a6ff"; displayBox.style.borderColor = "#58a6ff"; }
+                else { rankLabel.innerText = "EPIC"; rankLabel.style.color = "#8957e5"; displayBox.style.borderColor = "#8957e5"; }
+            }
+        }
 
         function addLog(boxId, msg, type) {
             const logBox = document.getElementById(boxId); const entry = document.createElement('div');
@@ -112,10 +158,10 @@
             logBox.prepend(entry); if (logBox.children.length > 15) logBox.lastChild.remove();
         }
 
-        // 강화 로직 (멀티 강화 지원 및 중간파괴방지)
         function enhance(times) {
+            if (level >= 21) return;
             let totalCost = 500 * times;
-            if (gold < totalCost) { addLog('log-weapon', `예산 부족! ${times}회 강화에 필요한 ${totalCost}G가 없습니다.`, "fail"); return; }
+            if (gold < totalCost) { addLog('log-weapon', "예산 부족! 결재(골드 수급)부터 올리세요.", "fail"); return; }
             
             for (let i = 1; i <= times; i++) {
                 gold -= 500; count++;
@@ -125,9 +171,13 @@
                 if (roll < sProb) {
                     level++;
                     addLog('log-weapon', `[${i}회차] +${level} 성공!`, "success");
+                    if (level >= 21) {
+                        addLog('log-weapon', "축하합니다! 당신은 한금아의 GOAT입니다.", "goat");
+                        break; 
+                    }
                 } else if (roll > (100 - bProb)) {
                     addLog('log-weapon', `[${i}회차] 파괴! 강화를 중단합니다.`, "broken");
-                    level = 0; break; // 파괴 시 즉시 중단
+                    level = 0; break;
                 } else {
                     addLog('log-weapon', `[${i}회차] 실패.`, "fail");
                     if (level > 10) level--;
@@ -136,23 +186,23 @@
             saveGame(); updateDisplay();
         }
 
-        function scrum() { gold += 50; addLog('log-gold', "버그 수정 완료! (+50G)", "gold-gain"); saveGame(); updateDisplay(); }
+        function scrum() { gold += 50; addLog('log-gold', "버그 수정 성공! (+50G)", "gold-gain"); saveGame(); updateDisplay(); }
         function jiraTicket() {
-            if (isProcessingJira) return; isProcessingJira = true;
-            const btn = document.getElementById('jira-btn'); const progress = document.getElementById('jira-progress');
+            if (isProcessingCompile) return; isProcessingCompile = true;
+            const btn = document.getElementById('compile-btn'); const progress = document.getElementById('jira-progress');
             btn.disabled = true; let width = 0;
             let interval = setInterval(() => {
                 if (width >= 100) {
                     clearInterval(interval); gold += 2000;
-                    addLog('log-gold', "빌드 성공! 배포 완료. (+2,000G)", "gold-gain");
-                    btn.disabled = false; isProcessingJira = false; progress.style.width = '0%';
+                    addLog('log-gold', "컴파일 완료! 인센티브 입금. (+2,000G)", "gold-gain");
+                    btn.disabled = false; isProcessingCompile = false; progress.style.width = '0%';
                     saveGame(); updateDisplay();
                 } else { width += 1; progress.style.width = width + '%'; }
             }, 50);
         }
         function overtime() {
-            if (Math.random() > 0.5) { gold += 10000; addLog('log-gold', "야근 성공! 거액 수령. (+10,000G)", "gold-gain"); }
-            else { let loss = Math.min(gold, 3000); gold -= loss; addLog('log-gold', "야근 적발! 시말서 엔딩... (-" + loss + "G)", "fail"); }
+            if (Math.random() > 0.5) { gold += 10000; addLog('log-gold', "야근 수당 승인! (+10,000G)", "gold-gain"); }
+            else { let loss = Math.min(gold, 3000); gold -= loss; addLog('log-gold', "야근 반려... 시말서 엔딩. (-" + loss + "G)", "fail"); }
             saveGame(); updateDisplay();
         }
         window.onload = loadGame;
